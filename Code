@@ -1,0 +1,71 @@
+#include <SPI.h>
+#include "max6675.h"
+#include <PID_v1.h>
+#define PIN_OUTPUT 3
+#define ktcSO 12    
+#define ktcCLK 13    
+float presion, psi, voltaje, temp, mmHg;
+double Setpoint, Input, Output;
+float temperatura1=0, temperatura2= 0, temperatura3=0, temperatura4=0, temperatura5=0, temperatura6=0;      
+int ktcCS1 = 5,ktcCS2 = 6,ktcCS3 = 7,ktcCS4 = 8,ktcCS5 = 9,ktcCS6 = 10;    
+
+
+double Kp=8, Ki=5, Kd=1;                      //You have to check this numbers, you might need to change them. I highly recommend you start with low values.
+
+  PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+MAX6675 ktc1(ktcCLK, ktcCS1, ktcSO);
+MAX6675 ktc2(ktcCLK, ktcCS2, ktcSO);
+MAX6675 ktc3(ktcCLK, ktcCS3, ktcSO);
+MAX6675 ktc4(ktcCLK, ktcCS4, ktcSO);
+MAX6675 ktc5(ktcCLK, ktcCS5, ktcSO);
+MAX6675 ktc6(ktcCLK, ktcCS6, ktcSO);          
+
+void setup() {
+  Input = temp;
+  Setpoint = 37;
+  pinMode(A0, INPUT);
+  myPID.SetMode(AUTOMATIC);
+  Serial.begin(9600);
+}
+
+void loop() {
+   Lectura();                                 
+   Promedio();                                
+   Control();                                 
+   Presion();                                 
+}
+
+void Lectura(){
+  temperatura1=ktc1.readCelsius();
+  temperatura2=ktc2.readCelsius();
+  temperatura3=ktc3.readCelsius();
+  temperatura4=ktc4.readCelsius();
+  temperatura5=ktc5.readCelsius();
+  temperatura6=ktc6.readCelsius();          
+}
+
+void Promedio(){
+  temp = (temperatura1+temperatura2+temperatura3+temperatura4+temperatura5+temperatura6)/6;       
+  Serial.print("Temperatura promedio: ");
+  Serial.print(temp);
+  delay(50);
+}
+
+void Control(){
+  Input = temp;                               
+  myPID.Compute();                            
+  analogWrite(PIN_OUTPUT, Output);           
+}
+
+void Presion(){
+  presion = analogRead(A0);                   
+  voltaje = presion * (5.00/1023);
+  delay(2);                                  
+  psi= (voltaje-0.5)/0.25;                   
+  mmHg= psi*51.71484;                       
+  Serial.print("Psi = "); 
+  Serial.println(psi);
+  Serial.print("mmHg= ");
+  Serial.println(mmHg);
+  delay(50);        
+  }
